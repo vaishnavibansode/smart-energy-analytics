@@ -555,41 +555,41 @@ with tab2:
     st.subheader("Average Power Consumption by Hour")
 
     if not filtered_hourly.empty:
-               hourly_data = filtered_hourly.copy()
+        hourly_data = filtered_hourly.copy()
 
-               hourly_data["weighted_power"] = (
-                  hourly_data["average_power_kw"] * hourly_data["readings"]
-                 )
+        hourly_data["weighted_power"] = (
+            hourly_data["average_power_kw"] * hourly_data["readings"]
+        )
 
-               hourly_pattern = hourly_data.groupby("hour").agg(
-                  total_weighted_power=("weighted_power", "sum"),
-                  total_readings=("readings", "sum")
-                 )
+        hourly_pattern = hourly_data.groupby("hour").agg(
+            total_weighted_power=("weighted_power", "sum"),
+            total_readings=("readings", "sum")
+        )
 
-               hourly_pattern["average_power_kw"] = (
-               hourly_pattern["total_weighted_power"]
-               / hourly_pattern["total_readings"]
-                 )
+        hourly_pattern["average_power_kw"] = (
+            hourly_pattern["total_weighted_power"]
+            / hourly_pattern["total_readings"]
+        )
 
-               hourly_pattern = hourly_pattern.reindex(range(24))
+        hourly_pattern = hourly_pattern.reindex(range(24))
 
-               hourly_pattern = (
-                   hourly_pattern[["average_power_kw"]]
-                   .dropna()
-                   .reset_index()
-                   )
+        hourly_pattern = (
+            hourly_pattern[["average_power_kw"]]
+            .dropna()
+            .reset_index()
+        )
 
         fig = px.bar(
-            hourly_pattern,
-            x="hour",
-            y="average_power_kw",
-            title="Average Household Active Power by Hour of Day",
-            labels={
-                "hour": "Hour of Day (0–23)",
-                "average_power_kw": "Average Active Power (kW)"
-            },
-            color="average_power_kw",
-            color_continuous_scale="Teal"
+        hourly_pattern,
+        x="hour",
+        y="average_power_kw",
+        title="Average Household Active Power by Hour of Day",
+        labels={
+            "hour": "Hour of Day (0–23)",
+            "average_power_kw": "Average Active Power (kW)"
+        },
+        color="average_power_kw",
+        color_continuous_scale="Teal"
         )
 
         fig.update_xaxes(
