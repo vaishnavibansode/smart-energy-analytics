@@ -52,22 +52,65 @@ plt.tight_layout()
 plt.savefig(os.path.join(OUTPUT_DIR, "daily_consumption.png"), dpi=300)
 plt.close()
 
+
 # 3. Average Consumption by Hour
-hourly_pattern = hourly.groupby("hour")["average_power_kw"].mean()
-hourly_pattern = hourly_pattern.reindex(
-    [f"{i:02d}" for i in range(24)]
+
+# Convert columns to numeric values
+hourly["hour"] = pd.to_numeric(hourly["hour"], errors="coerce")
+hourly["average_power_kw"] = pd.to_numeric(
+    hourly["average_power_kw"], errors="coerce"
 )
+hourly["readings"] = pd.to_numeric(
+    hourly["readings"], errors="coerce"
+)
+
+# Remove invalid records
+hourly_valid = hourly.dropna(
+    subset=["hour", "average_power_kw", "readings"]
+).copy()
+
+hourly_valid = hourly_valid[
+    hourly_valid["hour"].between(0, 23)
+    & (hourly_valid["readings"] > 0)
+]
+
+# Calculate weighted average power for each hour
+hourly_valid["weighted_power"] = (
+    hourly_valid["average_power_kw"] * hourly_valid["readings"]
+)
+
+hourly_pattern = hourly_valid.groupby("hour").agg(
+    total_weighted_power=("weighted_power", "sum"),
+    total_readings=("readings", "sum")
+)
+
+hourly_pattern["average_power_kw"] = (
+    hourly_pattern["total_weighted_power"]
+    / hourly_pattern["total_readings"]
+)
+
+# Ensure all 24 hours are represented
+hourly_pattern = hourly_pattern.reindex(range(24))
+
+# Retain the calculated average for plotting
+hourly_pattern = hourly_pattern["average_power_kw"]
 
 plt.figure(figsize=(11, 6))
 hourly_pattern.plot(kind="bar")
+
 plt.title("Average Household Power Consumption by Hour")
 plt.xlabel("Hour of Day")
 plt.ylabel("Average Active Power (kW)")
-plt.xticks(rotation=0)
+plt.xticks(range(24), [f"{i:02d}" for i in range(24)], rotation=0)
 plt.grid(axis="y")
 plt.tight_layout()
-plt.savefig(os.path.join(OUTPUT_DIR, "hourly_consumption.png"), dpi=300)
+
+plt.savefig(
+    os.path.join(OUTPUT_DIR, "hourly_consumption.png"),
+    dpi=300
+)
 plt.close()
+
 
 # 4. Top 10 Peak Demand Readings
 top_peaks = peaks.head(10).copy()
